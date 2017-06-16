@@ -62,7 +62,11 @@ class MailjetTransport implements Swift_Transport {
      * @var array|null
      */
     protected $resultApi;
-
+    
+      /**
+     * @var \Mailjet\Client
+     */
+    protected  $mailjetClient;
     /**
      * @param Swift_Events_EventDispatcher $eventDispatcher
      * @param string $apiKey
@@ -75,6 +79,7 @@ class MailjetTransport implements Swift_Transport {
         $this->apiSecret = $apiSecret;
         $this->call = $call;
         $this->clientOptions = $clientOptions;
+        $this->$mailjetClient = $this->createMailjetClient();
     }
 
     /**
@@ -124,11 +129,10 @@ class MailjetTransport implements Swift_Transport {
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
         
-        // Create mailjetClient
-        $mailjetClient = $this->createMailjetClient();
+       
         try {
             // send API call
-            $this->resultApi = $mailjetClient->post(Resources::$Email, $mailjetMessage);
+            $this->resultApi = $this->mailjetClient->post(Resources::$Email, $mailjetMessage);
             if (isset($this->resultApi->getBody()['Sent'])) {
                 $sendCount += count($this->resultApi->getBody()['Sent']);
             }
@@ -170,11 +174,11 @@ class MailjetTransport implements Swift_Transport {
             array_push($bodyRequest['Messages'], $mailjetMessage);
         }
         // Create mailjetClient
-        $mailjetClient = $this->createMailjetClient();
+       
 
         try {
             // send API call
-            $this->resultApi = $mailjetClient->post(Resources::$Email, $mailjetMessage);
+            $this->resultApi = $this->mailjetClient->post(Resources::$Email, $mailjetMessage);
 
             if (isset($this->resultApi->getBody()['Sent'])) {
                 $sendCount += count($this->resultApi->getBody()['Sent']);
@@ -210,7 +214,7 @@ class MailjetTransport implements Swift_Transport {
         if ($this->clientOptions['version'] == 'v3') {
             $this->messageFormat = new messagePayloadV3();
         } else {
-            //todo throw some error
+            //todo throw some error or pick one as default
         }
             return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call, $this->clientOptions);
         }
