@@ -1,5 +1,9 @@
 <?php
 namespace Mailjet\MailjetSwiftMailer\SwiftMailer;
+
+use \Swift_Mime_Message;
+use \Swift_Attachment;
+use \Swift_MimePart;
 class messagePayloadV3 implements messageFormatStrategy {
    /**
      * https://dev.mailjet.com/guides/#send-api-json-properties
