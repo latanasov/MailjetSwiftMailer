@@ -79,7 +79,7 @@ class MailjetTransport implements Swift_Transport {
         $this->apiSecret = $apiSecret;
         $this->call = $call;
         $this->clientOptions = $clientOptions;
-        $this->$mailjetClient = $this->createMailjetClient();
+        $this->mailjetClient = $this->createMailjetClient();
     }
 
     /**
