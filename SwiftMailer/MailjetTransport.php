@@ -9,6 +9,7 @@ use \Swift_Mime_Message;
 use \Swift_Transport;
 use \Swift_Attachment;
 use \Swift_MimePart;
+use Mailjet\Resources;
 
 interface messageFormatStrategy {
 
