@@ -31,7 +31,8 @@ class MailjetTransportTest extends TestCase
      */
     protected function createTransport()
     {
-        $transport = new MailjetTransport($this->dispatcher);
+        $clientOptions = ['url' => "www.mailjet.com", 'version' => 'v3.1', 'call' => false];
+        $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET, $clientOptions);
         $transport->setApiKey(self::MAILJET_TEST_API_KEY);
         $transport->setApiSecret(self::MAILJET_TEST_API_SECRET);
         $transport->setCall(false); // Do not perform the call
@@ -55,7 +56,7 @@ class MailjetTransportTest extends TestCase
             ->addFrom('from@example.com', 'From Name')
         ;
         $message->setBody("Hello world!", 'text/plain');
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
         $result = $transport->send($message);
 
         $this->assertEquals('Hello world!', $mailjetMessage['TextPart']);
@@ -81,7 +82,7 @@ class MailjetTransportTest extends TestCase
                 </body>
                 </html>
                 ", "text/html");
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
         $result = $transport->send($message);
 
         $this->assertEquals("<!DOCTYPE html>
@@ -108,7 +109,7 @@ class MailjetTransportTest extends TestCase
         ;
         $message->setBody("Hello world!");
         $message->getHeaders()->addTextHeader('X-MJ-TemplateID', 'azertyuiop');
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
         $result = $transport->send($message);
 
         $this->assertEquals('azertyuiop', $mailjetMessage['TemplateID']);
@@ -137,7 +138,7 @@ class MailjetTransportTest extends TestCase
         $message->getHeaders()->addTextHeader('X-MJ-EventPayLoad', 'Eticket,1234,row,15,seat,B');
         $message->getHeaders()->addTextHeader('X-MJ-Vars', array('today'=>'monday'));
 
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
 
         $result = $transport->send($message);
 
@@ -166,7 +167,7 @@ class MailjetTransportTest extends TestCase
             ->addTo('to@example.com', 'To Name')
             ->addFrom('from@example.com', 'From Name')
         ;
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
 
         $result = $transport->send($message);
 
@@ -191,7 +192,7 @@ class MailjetTransportTest extends TestCase
             ->addBcc('bcc-2@example.com', 'BCC 2 Name')
             ->addReplyTo('reply-to@example.com', 'Reply To Name')
         ;
-        $mailjetMessage = $transport->getMailjetMessage($message);
+        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
 
         $result = $transport->send($message);
 
@@ -241,7 +242,7 @@ class MailjetTransportTest extends TestCase
         $result = $transport->bulkSend($messages);
 
         foreach ($messages as $message) {
-            $mailjetMessage = $transport->getMailjetMessage($message);
+            $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
             $this->assertEquals('<p>Foo bar</p>', $mailjetMessage['HTMLPart']);
             $this->assertNull($mailjetMessage['TextPart'], 'HTML only email should not contain plaintext counterpart');
             $this->assertEquals('Test Subject', $mailjetMessage['Subject']);
@@ -311,7 +312,7 @@ class MailjetTransportTest extends TestCase
         $this->assertNotNull($transport->getApiSecret(), 'No API Secret specified');
 
         $parameters = array(
-            'Messages' => $transport->getMailjetMessage($message)
+            'Messages' =>  $transport->messageFormat->getMailjetMessage($message)
         );
 
         try {
