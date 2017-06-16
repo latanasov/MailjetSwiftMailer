@@ -32,7 +32,7 @@ class MailjetTransportTest extends TestCase
     protected function createTransport()
     {
         $clientOptions = ['url' => "www.mailjet.com", 'version' => 'v3.1', 'call' => false];
-        $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET, $clientOptions);
+        $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET,false, $clientOptions);
         $transport->setApiKey(self::MAILJET_TEST_API_KEY);
         $transport->setApiSecret(self::MAILJET_TEST_API_SECRET);
         $transport->setCall(false); // Do not perform the call
