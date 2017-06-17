@@ -1,12 +1,14 @@
 <?php
+
 namespace Mailjet\MailjetSwiftMailer\SwiftMailer;
 
 use \Swift_Mime_Message;
 use \Swift_Attachment;
 use \Swift_MimePart;
+
 class messagePayloadV31 implements messageFormatStrategy {
- 
-  /**
+
+    /**
      * https://dev.mailjet.com/guides/#send-api-json-properties
      * Convert Swift_Mime_SimpleMessage into Mailjet Payload for send API
      *
@@ -14,8 +16,7 @@ class messagePayloadV31 implements messageFormatStrategy {
      * @return array Mailjet Send Message
      * @throws \Swift_SwiftException
      */
- public function getMailjetMessage(Swift_Mime_Message $message)
-    {
+    public function getMailjetMessage(Swift_Mime_Message $message) {
         $contentType = $this->getMessagePrimaryContentType($message);
         $fromAddresses = $message->getFrom();
         $fromEmails = array_keys($fromAddresses);
@@ -58,8 +59,8 @@ class messagePayloadV31 implements messageFormatStrategy {
         foreach ($message->getChildren() as $child) {
             if ($child instanceof Swift_Attachment) {
                 $attachments[] = array(
-                    'ContentType'    => $child->getContentType(),
-                    'Filename'    => $child->getFilename(),
+                    'ContentType' => $child->getContentType(),
+                    'Filename' => $child->getFilename(),
                     'Base64Content' => base64_encode($child->getBody())
                 );
             } elseif ($child instanceof Swift_MimePart && $this->supportsContentType($child->getContentType())) {
@@ -72,16 +73,16 @@ class messagePayloadV31 implements messageFormatStrategy {
         }
 
         $mailjetMessage = array(
-            'From'  => array(
+            'From' => array(
                 'Email' => $fromEmails[0],
-                'Name'  => $fromAddresses[$fromEmails[0]]
+                'Name' => $fromAddresses[$fromEmails[0]]
             ),
-            'To'    => $to,
-            'Cc'    => $cc,
-            'Bcc'   => $bcc,
-            'HTMLPart'  => $bodyHtml,
-            'TextPart'  => $bodyText,
-            'Subject'   => $message->getSubject(),
+            'To' => $to,
+            'Cc' => $cc,
+            'Bcc' => $bcc,
+            'HTMLPart' => $bodyHtml,
+            'TextPart' => $bodyText,
+            'Subject' => $message->getSubject(),
         );
 
         if ($replyTo = $this->getReplyTo($message)) {
@@ -102,17 +103,15 @@ class messagePayloadV31 implements messageFormatStrategy {
 
         // @TODO bulk messages
 
-        return ['body' => ['Messages' => $mailjetMessage]];
+        return ['Messages' => $mailjetMessage];
     }
 
-
-       /**
+    /**
      * Get the special X-MJ|Mailjet-* headers. https://app.mailjet.com/docs/emails_headers
      *
      * @return array
      */
-    private static function getMailjetHeaders()
-    {
+    private static function getMailjetHeaders() {
         return array(
             'X-MJ-TemplateID' => 'TemplateID',
             'X-MJ-TemplateLanguage' => 'TemplateLanguage',
@@ -127,8 +126,9 @@ class messagePayloadV31 implements messageFormatStrategy {
             'X-MJ-EventPayLoad' => 'EventPayload',
             'X-MJ-MonitoringCategory' => 'MonitoringCategory',
             'X-MJ-Vars' => 'Variables'
-            );
+        );
     }
+
     /**
      * Get the 'reply_to' headers and format as required by Mailjet.
      *
@@ -136,8 +136,7 @@ class messagePayloadV31 implements messageFormatStrategy {
      *
      * @return array|null
      */
-    private function getReplyTo(Swift_Mime_Message $message)
-    {
+    private function getReplyTo(Swift_Mime_Message $message) {
         if (is_array($message->getReplyTo())) {
             return array('Email' => key($message->getReplyTo()), 'Name' => current($message->getReplyTo()));
         } elseif (is_string($message->getReplyTo())) {
@@ -146,8 +145,8 @@ class messagePayloadV31 implements messageFormatStrategy {
             return null;
         }
     }
-    private function prepareHeaders(Swift_Mime_Message $message)
-    {
+
+    private function prepareHeaders(Swift_Mime_Message $message) {
         $mailjetHeaders = self::getMailjetHeaders();
         $messageHeaders = $message->getHeaders();
 
@@ -156,22 +155,21 @@ class messagePayloadV31 implements messageFormatStrategy {
 
         foreach (array_keys($mailjetHeaders) as $headerName) {
             /** @var \Swift_Mime_Headers_MailboxHeader $value */
-           if (null !== $value = $messageHeaders->get($headerName)) {
-               // Handle custom headers
-               $mailjetData[$mailjetHeaders[$headerName]] = $value->getValue();
-               // remove Mailjet specific headers
-               $messageHeaders->removeAll($headerName);
-           }
+            if (null !== $value = $messageHeaders->get($headerName)) {
+                // Handle custom headers
+                $mailjetData[$mailjetHeaders[$headerName]] = $value->getValue();
+                // remove Mailjet specific headers
+                $messageHeaders->removeAll($headerName);
+            }
         }
 
         return $mailjetData;
     }
-    
-        /**
+
+    /**
      * @return array
      */
-    private function getSupportedContentTypes()
-    {
+    private function getSupportedContentTypes() {
         return array(
             'text/plain',
             'text/html'
@@ -182,8 +180,7 @@ class messagePayloadV31 implements messageFormatStrategy {
      * @param string $contentType
      * @return bool
      */
-    private function supportsContentType($contentType)
-    {
+    private function supportsContentType($contentType) {
         return in_array($contentType, $this->getSupportedContentTypes());
     }
 
@@ -191,8 +188,7 @@ class messagePayloadV31 implements messageFormatStrategy {
      * @param Swift_Mime_Message $message
      * @return string
      */
-    private function getMessagePrimaryContentType(Swift_Mime_Message $message)
-    {
+    private function getMessagePrimaryContentType(Swift_Mime_Message $message) {
         $contentType = $message->getContentType();
         if ($this->supportsContentType($contentType)) {
             return $contentType;
@@ -208,4 +204,5 @@ class messagePayloadV31 implements messageFormatStrategy {
         }
         return $contentType;
     }
+
 }

@@ -1,75 +1,69 @@
 <?php
+
 namespace Mailjet\MailjetSwiftMailer\Tests\SwiftMailer;
 
 use PHPUnit\Framework\TestCase;
 use Mailjet\MailjetSwiftMailer\SwiftMailer\MailjetTransport;
 use Symfony\Component\Config\Definition\Processor;
 
-class MailjetTransportTest extends TestCase
-{
+class MailjetTransportTest extends TestCase {
+
     const MAILJET_TEST_API_KEY = 'ABCDEFG1234567';
     const MAILJET_TEST_API_SECRET = 'ABCDEFG1234567';
+
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject|\Swift_Events_EventDispatcher
      */
     protected $dispatcher;
 
-
-    protected function setUp()
-    {
+    protected function setUp() {
         $this->dispatcher = $this->createMock('\Swift_Events_EventDispatcher');
     }
 
-    protected function tearDown()
-    {
+    protected function tearDown() {
         $this->dispatcher = null;
     }
+
     /**
      * Returns an instance of the transport through which test messages can be sent
      *
      * @return MailjetTransport
      */
-    protected function createTransport()
-    {
+    protected function createTransport() {
         $clientOptions = ['url' => "www.mailjet.com", 'version' => 'v3.1', 'call' => false];
-        $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET,false, $clientOptions);
+        $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET, false, $clientOptions);
         $transport->setApiKey(self::MAILJET_TEST_API_KEY);
         $transport->setApiSecret(self::MAILJET_TEST_API_SECRET);
         $transport->setCall(false); // Do not perform the call
         return $transport;
     }
 
-    public function testCanBeInstanciable()
-    {
+    public function testCanBeInstanciable() {
         $this->assertInstanceOf(
-            MailjetTransport::class,
-            $this->createTransport()
+                MailjetTransport::class, $this->createTransport()
         );
     }
 
-    public function testSendTextEmail()
-    {
+    public function testSendTextEmail() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', 'Foo bar');
         $message
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
         ;
         $message->setBody("Hello world!", 'text/plain');
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
         $result = $transport->send($message);
-
         $this->assertEquals('Hello world!', $mailjetMessage['TextPart']);
         $this->assertMessageSendable($message);
     }
 
-    public function testSendHTMLEmail()
-    {
+    public function testSendHTMLEmail() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', 'Foo bar');
         $message
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
         ;
         $message->setBody("<!DOCTYPE html>
                 <html>
@@ -82,7 +76,7 @@ class MailjetTransportTest extends TestCase
                 </body>
                 </html>
                 ", "text/html");
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
         $result = $transport->send($message);
 
         $this->assertEquals("<!DOCTYPE html>
@@ -99,30 +93,28 @@ class MailjetTransportTest extends TestCase
         $this->assertMessageSendable($message);
     }
 
-    public function testSendTextEmailWithTemplateId()
-    {
+    public function testSendTextEmailWithTemplateId() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', 'Foo bar');
         $message
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
         ;
         $message->setBody("Hello world!");
         $message->getHeaders()->addTextHeader('X-MJ-TemplateID', 'azertyuiop');
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
         $result = $transport->send($message);
 
         $this->assertEquals('azertyuiop', $mailjetMessage['TemplateID']);
         $this->assertMessageSendable($message);
     }
 
-    public function testSendEmailWithAllCustomHeaders()
-    {
+    public function testSendEmailWithAllCustomHeaders() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', 'Foo bar');
         $message
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
         ;
         $message->setBody("Hello world!");
         $message->getHeaders()->addTextHeader('X-MJ-TemplateID', 'azertyuiop');
@@ -136,9 +128,9 @@ class MailjetTransportTest extends TestCase
         $message->getHeaders()->addTextHeader('X-Mailjet-TrackClick', 2);
         $message->getHeaders()->addTextHeader('X-MJ-CustomID', 'PassengerEticket1234');
         $message->getHeaders()->addTextHeader('X-MJ-EventPayLoad', 'Eticket,1234,row,15,seat,B');
-        $message->getHeaders()->addTextHeader('X-MJ-Vars', array('today'=>'monday'));
+        $message->getHeaders()->addTextHeader('X-MJ-Vars', array('today' => 'monday'));
 
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
 
         $result = $transport->send($message);
 
@@ -153,21 +145,20 @@ class MailjetTransportTest extends TestCase
         $this->assertEquals(2, $mailjetMessage['TrackClicks']);
         $this->assertEquals('PassengerEticket1234', $mailjetMessage['CustomID']);
         $this->assertEquals('Eticket,1234,row,15,seat,B', $mailjetMessage['EventPayload']);
-        $this->assertEquals(array('today'=>'monday'), $mailjetMessage['Variables']);
+        $this->assertEquals(array('today' => 'monday'), $mailjetMessage['Variables']);
         $this->assertMessageSendable($message);
     }
 
-    public function testMultipartNullContentType()
-    {
+    public function testMultipartNullContentType() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', 'Foo bar');
         $message
-            ->addPart('Foo bar', 'text/plain')
-            ->addPart('<p>Foo bar</p>', 'text/html')
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
+                ->addPart('Foo bar', 'text/plain')
+                ->addPart('<p>Foo bar</p>', 'text/html')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
         ;
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
 
         $result = $transport->send($message);
 
@@ -176,23 +167,21 @@ class MailjetTransportTest extends TestCase
         $this->assertMessageSendable($message);
     }
 
-
-    public function testMessage()
-    {
+    public function testMessage() {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', '<p>Foo bar</p>', 'text/html');
         $attachment = new \Swift_Attachment($this->createPngContent(), 'filename.png', 'image/png');
         $message->attach($attachment);
         $message
-            ->addTo('to@example.com', 'To Name')
-            ->addFrom('from@example.com', 'From Name')
-            ->addCc('cc-1@example.com', 'CC 1 Name')
-            ->addCc('cc-2@example.com', 'CC 2 Name')
-            ->addBcc('bcc-1@example.com', 'BCC 1 Name')
-            ->addBcc('bcc-2@example.com', 'BCC 2 Name')
-            ->addReplyTo('reply-to@example.com', 'Reply To Name')
+                ->addTo('to@example.com', 'To Name')
+                ->addFrom('from@example.com', 'From Name')
+                ->addCc('cc-1@example.com', 'CC 1 Name')
+                ->addCc('cc-2@example.com', 'CC 2 Name')
+                ->addBcc('bcc-1@example.com', 'BCC 1 Name')
+                ->addBcc('bcc-2@example.com', 'BCC 2 Name')
+                ->addReplyTo('reply-to@example.com', 'Reply To Name')
         ;
-        $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+        $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
 
         $result = $transport->send($message);
 
@@ -216,23 +205,22 @@ class MailjetTransportTest extends TestCase
         $this->assertMessageSendable($message);
     }
 
-    public function testBulkSendMessages()
-    {
+    public function testBulkSendMessages() {
         $transport = $this->createTransport();
 
         $messages = [];
-        for ($i=0; $i < 4; $i++) {
+        for ($i = 0; $i < 4; $i++) {
             $message = new \Swift_Message('Test Subject', '<p>Foo bar</p>', 'text/html');
             $attachment = new \Swift_Attachment($this->createPngContent(), 'filename.png', 'image/png');
             $message->attach($attachment);
             $message
-                ->addTo('to@example.com', 'To Name')
-                ->addFrom('from@example.com', 'From Name')
-                ->addCc('cc-1@example.com', 'CC 1 Name')
-                ->addCc('cc-2@example.com', 'CC 2 Name')
-                ->addBcc('bcc-1@example.com', 'BCC 1 Name')
-                ->addBcc('bcc-2@example.com', 'BCC 2 Name')
-                ->addReplyTo('reply-to@example.com', 'Reply To Name')
+                    ->addTo('to@example.com', 'To Name')
+                    ->addFrom('from@example.com', 'From Name')
+                    ->addCc('cc-1@example.com', 'CC 1 Name')
+                    ->addCc('cc-2@example.com', 'CC 2 Name')
+                    ->addBcc('bcc-1@example.com', 'BCC 1 Name')
+                    ->addBcc('bcc-2@example.com', 'BCC 2 Name')
+                    ->addReplyTo('reply-to@example.com', 'Reply To Name')
             ;
 
             array_push($messages, $message);
@@ -242,7 +230,7 @@ class MailjetTransportTest extends TestCase
         $result = $transport->bulkSend($messages);
 
         foreach ($messages as $message) {
-            $mailjetMessage =  $transport->messageFormat->getMailjetMessage($message);
+            $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
             $this->assertEquals('<p>Foo bar</p>', $mailjetMessage['HTMLPart']);
             $this->assertNull($mailjetMessage['TextPart'], 'HTML only email should not contain plaintext counterpart');
             $this->assertEquals('Test Subject', $mailjetMessage['Subject']);
@@ -270,8 +258,7 @@ class MailjetTransportTest extends TestCase
      * @param string $type
      * @param array $message
      */
-    protected function assertMailjetMessageContainsRecipient($email, $name, $type, array $message)
-    {
+    protected function assertMailjetMessageContainsRecipient($email, $name, $type, array $message) {
         foreach ($message[$type] as $recipient) {
             if ($recipient['Email'] === $email && $recipient['Name'] === $name) {
                 $this->assertTrue(true);
@@ -287,8 +274,7 @@ class MailjetTransportTest extends TestCase
      * @param string $content
      * @param array $message
      */
-    protected function assertMailjetMessageContainsAttachment($type, $name, $content, array $message)
-    {
+    protected function assertMailjetMessageContainsAttachment($type, $name, $content, array $message) {
         foreach ($message['Attachments'] as $attachment) {
             if ($attachment['ContentType'] === $type && $attachment['Filename'] === $name) {
                 $this->assertEquals($content, base64_decode($attachment['Base64Content']));
@@ -303,17 +289,15 @@ class MailjetTransportTest extends TestCase
      * @param MailjetTransport|null $transport
      * @param \Swift_Message $message
      */
-    protected function assertMessageSendable(\Swift_Message $message, $transport = null)
-    {
+    protected function assertMessageSendable(\Swift_Message $message, $transport = null) {
         if (!$transport) {
             $transport = $this->createTransport();
         }
         $this->assertNotNull($transport->getApiKey(), 'No API key specified');
         $this->assertNotNull($transport->getApiSecret(), 'No API Secret specified');
 
-        $parameters = array(
-            'Messages' =>  $transport->messageFormat->getMailjetMessage($message)
-        );
+        $parameters = $transport->messageFormat->getMailjetMessage($message);
+
 
         try {
             $configuration = new MessageSendConfiguration();
@@ -321,15 +305,13 @@ class MailjetTransportTest extends TestCase
             $processor->processConfiguration($configuration, $parameters);
         } catch (\Exception $e) {
             $this->fail(sprintf(
-                "Mailjet message contains errors, %s\n\n%s",
-                $e->getMessage(),
-                json_encode($parameters['Messages'], JSON_PRETTY_PRINT)
+                            "Mailjet message contains errors, %s\n\n%s", $e->getMessage(), json_encode($parameters['Messages'], JSON_PRETTY_PRINT)
             ));
         }
     }
 
-    protected function createPngContent()
-    {
+    protected function createPngContent() {
         return base64_decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlPM0jRW/QAAAApJREFUeJxjYgAAAAYAAzY3fKgAAAAASUVORK5CYII=");
     }
+
 }

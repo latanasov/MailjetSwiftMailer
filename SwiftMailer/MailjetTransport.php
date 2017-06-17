@@ -25,7 +25,7 @@ class MailjetTransport implements Swift_Transport {
      * @var Swift_Events_EventDispatcher
      */
     protected $eventDispatcher;
-    
+
     /**
      * @var messageFormatStrategy
      */
@@ -62,11 +62,12 @@ class MailjetTransport implements Swift_Transport {
      * @var array|null
      */
     protected $resultApi;
-    
-      /**
+
+    /**
      * @var \Mailjet\Client
      */
-    protected  $mailjetClient;
+    protected $mailjetClient;
+
     /**
      * @param Swift_Events_EventDispatcher $eventDispatcher
      * @param string $apiKey
@@ -125,14 +126,14 @@ class MailjetTransport implements Swift_Transport {
             }
         }
         $sendCount = 0;
-        
+
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
-        
-       
+
+
         try {
             // send API call
-            $this->resultApi = $this->mailjetClient->post(Resources::$Email, $mailjetMessage);
+            $this->resultApi = $this->mailjetClient->post(Resources::$Email, [body => $mailjetMessage]);
             if (isset($this->resultApi->getBody()['Sent'])) {
                 $sendCount += count($this->resultApi->getBody()['Sent']);
             }
@@ -170,11 +171,11 @@ class MailjetTransport implements Swift_Transport {
 
         foreach ($messages as $message) {
             // extract Mailjet Message from SwiftMailer Message
-            $mailjetMessage = $this->getMailjetMessage($message);
+            $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
             array_push($bodyRequest['Messages'], $mailjetMessage);
         }
         // Create mailjetClient
-       
+
 
         try {
             // send API call
@@ -203,19 +204,19 @@ class MailjetTransport implements Swift_Transport {
      * @throws \Swift_TransportException
      */
     protected function createMailjetClient() {
-        
+
         if ($this->apiKey === null || $this->apiSecret === null) {
             throw new \Swift_TransportException('Cannot create instance of \Mailjet\Client while API key is NULL');
         }
         if (isset($this->clientOptions)) {
             if ($this->clientOptions['version'] == 'v3.1') {
-            $this->messageFormat = new messagePayloadV31();
-        }
-        if ($this->clientOptions['version'] == 'v3') {
-            $this->messageFormat = new messagePayloadV3();
-        } else {
-            //todo throw some error or pick one as default
-        }
+                $this->messageFormat = new messagePayloadV31();
+            }
+            if ($this->clientOptions['version'] == 'v3') {
+                $this->messageFormat = new messagePayloadV3();
+            } else {
+                //todo throw some error or pick one as default
+            }
             return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call, $this->clientOptions);
         }
         return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call);

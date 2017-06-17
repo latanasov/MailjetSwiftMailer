@@ -1,11 +1,14 @@
 <?php
+
 namespace Mailjet\MailjetSwiftMailer\SwiftMailer;
 
 use \Swift_Mime_Message;
 use \Swift_Attachment;
 use \Swift_MimePart;
+
 class messagePayloadV3 implements messageFormatStrategy {
-   /**
+
+    /**
      * https://dev.mailjet.com/guides/#send-api-json-properties
      * Convert Swift_Mime_SimpleMessage into Mailjet Payload for send API
      *
@@ -13,8 +16,7 @@ class messagePayloadV3 implements messageFormatStrategy {
      * @return array Mailjet Send Message
      * @throws \Swift_SwiftException
      */
-    public function getMailjetMessage(Swift_Mime_Message $message)
-    {
+    public function getMailjetMessage(Swift_Mime_Message $message) {
         $contentType = $this->getMessagePrimaryContentType($message);
         $fromAddresses = $message->getFrom();
         $fromEmails = array_keys($fromAddresses);
@@ -54,8 +56,8 @@ class messagePayloadV3 implements messageFormatStrategy {
         foreach ($message->getChildren() as $child) {
             if ($child instanceof Swift_Attachment) {
                 $attachments[] = array(
-                    'Content-type'    => $child->getContentType(),
-                    'Filename'    => $child->getFilename(),
+                    'Content-type' => $child->getContentType(),
+                    'Filename' => $child->getFilename(),
                     'content' => base64_encode($child->getBody())
                 );
             } elseif ($child instanceof Swift_MimePart && $this->supportsContentType($child->getContentType())) {
@@ -67,11 +69,11 @@ class messagePayloadV3 implements messageFormatStrategy {
             }
         }
         $mailjetMessage = array(
-            'FromEmail'  => $fromEmails[0],
-            'FromName'   => $fromAddresses[$fromEmails[0]],
-            'Html-part'  => $bodyHtml,
-            'Text-part'  => $bodyText,
-            'Subject'    => $message->getSubject(),
+            'FromEmail' => $fromEmails[0],
+            'FromName' => $fromAddresses[$fromEmails[0]],
+            'Html-part' => $bodyHtml,
+            'Text-part' => $bodyText,
+            'Subject' => $message->getSubject(),
             'Recipients' => $this->getRecipients($message)
         );
         if (count($headers) > 0) {
@@ -84,15 +86,15 @@ class messagePayloadV3 implements messageFormatStrategy {
             $mailjetMessage['Attachments'] = $attachments;
         }
         // @TODO bulk messages
-        return ['body' => $mailjetMessage];
+        return $mailjetMessage;
     }
- /**
+
+    /**
      * Get the special X-MJ|Mailjet-* headers. https://app.mailjet.com/docs/emails_headers
      *
      * @return array
      */
-    public static function getMailjetHeaders()
-    {
+    public static function getMailjetHeaders() {
         return array(
             'X-MJ-TemplateID' => 'Mj-TemplateID',
             'X-MJ-TemplateLanguage' => 'Mj-TemplateLanguage',
@@ -106,8 +108,9 @@ class messagePayloadV3 implements messageFormatStrategy {
             'X-MJ-CustomID' => 'Mj-CustomID',
             'X-MJ-EventPayLoad' => 'Mj-EventPayLoad',
             'X-MJ-Vars' => 'Vars'
-            );
+        );
     }
+
     /**
      * Get the 'reply_to' headers and format as required by Mailjet.
      *
@@ -115,59 +118,57 @@ class messagePayloadV3 implements messageFormatStrategy {
      *
      * @return string|null
      */
-    protected function getReplyTo(Swift_Mime_Message $message)
-    {
+    protected function getReplyTo(Swift_Mime_Message $message) {
         if (is_array($message->getReplyTo())) {
-            return current($message->getReplyTo()).' <'.key($message->getReplyTo()).'>';
+            return current($message->getReplyTo()) . ' <' . key($message->getReplyTo()) . '>';
         }
     }
+
     /**
      * Extract Mailjet specific header
      * return an array of formatted data for Mailjet send API
      * @param  Swift_Mime_Message $message
      * @return array
      */
-    protected function prepareHeaders(Swift_Mime_Message $message)
-    {
+    protected function prepareHeaders(Swift_Mime_Message $message) {
         $mailjetHeaders = self::getMailjetHeaders();
         $messageHeaders = $message->getHeaders();
         $mailjetData = array();
         foreach (array_keys($mailjetHeaders) as $headerName) {
             /** @var \Swift_Mime_Headers_MailboxHeader $value */
-           if (null !== $value = $messageHeaders->get($headerName)) {
-               // Handle custom headers
-               $mailjetData[$mailjetHeaders[$headerName]] = $value->getValue();
-               // remove Mailjet specific headers
-               $messageHeaders->removeAll($headerName);
-           }
+            if (null !== $value = $messageHeaders->get($headerName)) {
+                // Handle custom headers
+                $mailjetData[$mailjetHeaders[$headerName]] = $value->getValue();
+                // remove Mailjet specific headers
+                $messageHeaders->removeAll($headerName);
+            }
         }
         return $mailjetData;
     }
-    
-     /**
+
+    /**
      * @return array
      */
-    protected function getSupportedContentTypes()
-    {
+    protected function getSupportedContentTypes() {
         return array(
             'text/plain',
             'text/html'
         );
     }
+
     /**
      * @param string $contentType
      * @return bool
      */
-    protected function supportsContentType($contentType)
-    {
+    protected function supportsContentType($contentType) {
         return in_array($contentType, $this->getSupportedContentTypes());
     }
+
     /**
      * @param Swift_Mime_Message $message
      * @return string
      */
-    protected function getMessagePrimaryContentType(Swift_Mime_Message $message)
-    {
+    protected function getMessagePrimaryContentType(Swift_Mime_Message $message) {
         $contentType = $message->getContentType();
         if ($this->supportsContentType($contentType)) {
             return $contentType;
@@ -183,9 +184,30 @@ class messagePayloadV3 implements messageFormatStrategy {
         }
         return $contentType;
     }
-    
 
+    /**
+     * Get all the addresses this message should be sent to.
+     *
+     * @param Swift_Mime_Message $message
+     *
+     * @return array
+     */
+    protected function getRecipients(Swift_Mime_Message $message) {
+        $to = [];
+        if ($message->getTo()) {
+            $to = array_merge($to, $message->getTo());
+        }
+        if ($message->getCc()) {
+            $to = array_merge($to, $message->getCc());
+        }
+        if ($message->getBcc()) {
+            $to = array_merge($to, $message->getBcc());
+        }
+        $recipients = [];
+        foreach ($to as $address => $name) {
+            $recipients[] = ['Email' => $address, 'Name' => $name];
+        }
+        return $recipients;
+    }
 
 }
-
-
