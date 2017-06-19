@@ -14,6 +14,8 @@ use Mailjet\Resources;
 interface messageFormatStrategy {
 
     public function getMailjetMessage(Swift_Mime_Message $message);
+
+    public function getVersion();
 }
 
 /**
@@ -163,6 +165,7 @@ class MailjetTransport implements Swift_Transport {
      * @return int Number of messages sent
      */
     public function bulkSend(array $messages, &$failedRecipients = null) {
+
         $this->resultApi = null;
         $failedRecipients = (array) $failedRecipients;
 
@@ -172,14 +175,21 @@ class MailjetTransport implements Swift_Transport {
         foreach ($messages as $message) {
             // extract Mailjet Message from SwiftMailer Message
             $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
-            array_push($bodyRequest['Messages'], $mailjetMessage);
+            //No real bulk sending in v3.1 already an array of messages
+            if ($this->messageFormat->getVersion() == 'v3.1') {
+                $bodyRequest[] = $mailjetMessage['Messages'];
+            }
+            if ($this->messageFormat->getVersion() == 'v3') {
+                $bodyRequest[] = $mailjetMessage;
+            }
         }
-        // Create mailjetClient
 
+        // Create mailjetClient
+        var_dump($bodyRequest);
 
         try {
             // send API call
-            $this->resultApi = $this->mailjetClient->post(Resources::$Email, $mailjetMessage);
+            $this->resultApi = $this->mailjetClient->post(Resources::$Email, [body => $bodyRequest]);
 
             if (isset($this->resultApi->getBody()['Sent'])) {
                 $sendCount += count($this->resultApi->getBody()['Sent']);

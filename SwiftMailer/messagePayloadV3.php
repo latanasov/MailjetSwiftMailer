@@ -8,6 +8,8 @@ use \Swift_MimePart;
 
 class messagePayloadV3 implements messageFormatStrategy {
 
+    private $version = 'v3';
+
     /**
      * https://dev.mailjet.com/guides/#send-api-json-properties
      * Convert Swift_Mime_SimpleMessage into Mailjet Payload for send API
@@ -208,6 +210,11 @@ class messagePayloadV3 implements messageFormatStrategy {
             $recipients[] = ['Email' => $address, 'Name' => $name];
         }
         return $recipients;
+    }
+
+    public function getVersion() {
+
+        return $this->version;
     }
 
 }
