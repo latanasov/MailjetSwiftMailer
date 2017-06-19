@@ -185,7 +185,6 @@ class MailjetTransport implements Swift_Transport {
         }
 
         // Create mailjetClient
-        var_dump($bodyRequest);
 
         try {
             // send API call
