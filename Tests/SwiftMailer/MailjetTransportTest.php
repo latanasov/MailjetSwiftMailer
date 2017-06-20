@@ -171,7 +171,10 @@ class MailjetTransportTest extends TestCase {
         $transport = $this->createTransport();
         $message = new \Swift_Message('Test Subject', '<p>Foo bar</p>', 'text/html');
         $attachment = new \Swift_Attachment($this->createPngContent(), 'filename.png', 'image/png');
+        $inline_attachment = new \Swift_Attachment($this->createPngContent(), 'filename.png', 'image/png');
+        $inline_attachment->setDisposition('inline');
         $message->attach($attachment);
+        $message->attach($inline_attachment);
         $message
                 ->addTo('to@example.com', 'To Name')
                 ->addFrom('from@example.com', 'From Name')
@@ -198,6 +201,7 @@ class MailjetTransportTest extends TestCase {
         $this->assertMailjetMessageContainsRecipient('bcc-2@example.com', 'BCC 2 Name', 'Bcc', $mailjetMessage);
 
         $this->assertMailjetMessageContainsAttachment('image/png', 'filename.png', $this->createPngContent(), $mailjetMessage);
+        $this->assertMailjetMessageContainsInlineAttachment('image/png', 'filename.png', $this->createPngContent(), $mailjetMessage);
 
         $this->assertArrayHasKey('ReplyTo', $mailjetMessage);
         $this->assertEquals(['Email' => 'reply-to@example.com', 'Name' => 'Reply To Name'], $mailjetMessage['ReplyTo']);
@@ -276,6 +280,22 @@ class MailjetTransportTest extends TestCase {
      */
     protected function assertMailjetMessageContainsAttachment($type, $name, $content, array $message) {
         foreach ($message['Attachments'] as $attachment) {
+            if ($attachment['ContentType'] === $type && $attachment['Filename'] === $name) {
+                $this->assertEquals($content, base64_decode($attachment['Base64Content']));
+                return;
+            }
+        }
+        $this->fail(sprintf('Expected Mailjet message to contain a %s attachment named %s', $type, $name));
+    }
+
+    /**
+     * @param string $type
+     * @param string $name
+     * @param string $content
+     * @param array $message
+     */
+    protected function assertMailjetMessageContainsInlineAttachment($type, $name, $content, array $message) {
+        foreach ($message['InlinedAttachments'] as $attachment) {
             if ($attachment['ContentType'] === $type && $attachment['Filename'] === $name) {
                 $this->assertEquals($content, base64_decode($attachment['Base64Content']));
                 return;

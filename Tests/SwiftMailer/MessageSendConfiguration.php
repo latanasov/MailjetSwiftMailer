@@ -129,9 +129,10 @@ class MessageSendConfiguration implements ConfigurationInterface
     protected function buildInlineAttachmentsSection(ArrayNodeDefinition $rootNode)
     {
         /** @var ArrayNodeDefinition $attachmentsNode */
-        $attachmentsNode = $rootNode->children()->arrayNode('Inline_attachments')->prototype('array');
+        $attachmentsNode = $rootNode->children()->arrayNode('InlinedAttachments')->prototype('array');//v3.1 new naming
         $attachmentsNode->children()->scalarNode('ContentType')->isRequired();
         $attachmentsNode->children()->scalarNode('Filename')->isRequired();
+        $attachmentsNode->children()->scalarNode('ContentID')->isRequired();//v3.1 addition
         $attachmentsNode->children()->scalarNode('Base64Content')->isRequired();
     }
 }

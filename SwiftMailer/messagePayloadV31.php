@@ -27,6 +27,7 @@ class messagePayloadV31 implements messageFormatStrategy {
         $bccAddresses = $message->getBcc() ? $message->getBcc() : [];
 
         $attachments = array();
+        $inline_attachments = array();
 
         // Process Headers
         $customHeaders = $this->prepareHeaders($message);
@@ -52,8 +53,6 @@ class messagePayloadV31 implements messageFormatStrategy {
         $bodyHtml = $bodyText = null;
         if ($contentType === 'text/plain') {
             $bodyText = $message->getBody();
-        } elseif ($contentType === 'text/html') {
-            $bodyHtml = $message->getBody();
         } else {
             $bodyHtml = $message->getBody();
         }
@@ -62,11 +61,23 @@ class messagePayloadV31 implements messageFormatStrategy {
         // Handle attachments
         foreach ($message->getChildren() as $child) {
             if ($child instanceof Swift_Attachment) {
-                $attachments[] = array(
-                    'ContentType' => $child->getContentType(),
-                    'Filename' => $child->getFilename(),
-                    'Base64Content' => base64_encode($child->getBody())
-                );
+                //Handle regular attachments
+                if ($child->getDisposition() === "attachment") {
+                    $attachments[] = array(
+                        'ContentType' => $child->getContentType(),
+                        'Filename' => $child->getFilename(),
+                        'Base64Content' => base64_encode($child->getBody())
+                    );
+                }
+                //Handle inline attachments
+                elseif ($child->getDisposition() === "inline") {
+                    $inline_attachments[] = array(
+                        'ContentType' => $child->getContentType(),
+                        'Filename' => $child->getFilename(),
+                        'ContentID'=> $child->getId(),
+                        'Base64Content' => base64_encode($child->getBody())
+                    );
+                }
             } elseif ($child instanceof Swift_MimePart && $this->supportsContentType($child->getContentType())) {
                 if ($child->getContentType() == "text/html") {
                     $bodyHtml = $child->getBody();
@@ -103,6 +114,9 @@ class messagePayloadV31 implements messageFormatStrategy {
 
         if (count($attachments) > 0) {
             $mailjetMessage['Attachments'] = $attachments;
+        }
+        if (count($inline_attachments) > 0) {
+            $mailjetMessage['InlinedAttachments'] = $inline_attachments;
         }
 
 
@@ -174,17 +188,8 @@ class messagePayloadV31 implements messageFormatStrategy {
      * @return array
      */
     private function findUserDefinedHeaders(Swift_Mime_Message $message) {
-        $mailjetHeaders = self::getMailjetHeaders();
         $messageHeaders = $message->getHeaders();
         $userDefinedHeaders = array();
-
-        foreach (array_keys($mailjetHeaders) as $headerName) {
-            /** @var \Swift_Mime_Headers_MailboxHeader $value */
-            if (null !== $value = $messageHeaders->get($headerName)) {
-                // remove Mailjet specific headers
-                $messageHeaders->removeAll($headerName);
-            }
-        }
         /* At this moment $messageHeaders is left with non-Mailjet specific headers
          * 
          */

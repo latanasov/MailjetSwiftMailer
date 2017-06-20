@@ -178,10 +178,10 @@ class MailjetTransport implements Swift_Transport {
             /* No real bulk sending in v3.1. Even single message already 
              * contains an array Messages, easier for me to code it this way.
              */
-            if ($this->messageFormat->getVersion() == 'v3.1') {
+            if ($this->messageFormat->getVersion() === 'v3.1') {
                 $bodyRequest[] = $mailjetMessage['Messages'];
             }
-            if ($this->messageFormat->getVersion() == 'v3') {
+            if ($this->messageFormat->getVersion() === 'v3') {
                 $bodyRequest[] = $mailjetMessage;
             }
         }
@@ -220,13 +220,7 @@ class MailjetTransport implements Swift_Transport {
             throw new \Swift_TransportException('Cannot create instance of \Mailjet\Client while API key is NULL');
         }
         if (isset($this->clientOptions)) {
-            if ($this->clientOptions['version'] === 'v3.1') {
-                $this->messageFormat = new messagePayloadV31();
-            } elseif ($this->clientOptions['version'] === 'v3') {
-                $this->messageFormat = new messagePayloadV3();
-            } else {
-                $this->messageFormat = new messagePayloadV3();
-            }
+            $this->setClientOptions($this->clientOptions);
             return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call, $this->clientOptions);
         }
         //If no options were provided set the message format to v3 as default
@@ -297,13 +291,10 @@ class MailjetTransport implements Swift_Transport {
         if (isset($this->clientOptions)) {
             if ($this->clientOptions['version'] === 'v3.1') {
                 $this->messageFormat = new messagePayloadV31();
-            } elseif ($this->clientOptions['version'] === 'v3') {
-                $this->messageFormat = new messagePayloadV3();
             } else {
                 $this->messageFormat = new messagePayloadV3();
             }
         }
-
         return $this;
     }
 
