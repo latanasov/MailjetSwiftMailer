@@ -136,9 +136,8 @@ class MailjetTransport implements Swift_Transport {
         try {
             // send API call
             $this->resultApi = $this->mailjetClient->post(Resources::$Email, [body => $mailjetMessage]);
-            if (isset($this->resultApi->getBody()['Sent'])) {
-                $sendCount += count($this->resultApi->getBody()['Sent']);
-            }
+
+            $sendCount = $this->findNumberOfSentMails();
             // get result
             if ($this->resultApi->success()) {
                 $resultStatus = Swift_Events_SendEvent::RESULT_SUCCESS;
@@ -192,9 +191,7 @@ class MailjetTransport implements Swift_Transport {
             // send API call
             $this->resultApi = $this->mailjetClient->post(Resources::$Email, [body => $bodyRequest]);
 
-            if (isset($this->resultApi->getBody()['Sent'])) {
-                $sendCount += count($this->resultApi->getBody()['Sent']);
-            }
+            $sendCount = $this->findNumberOfSentMails();
             // get result
             if ($this->resultApi->success()) {
                 $resultStatus = Swift_Events_SendEvent::RESULT_SUCCESS;
@@ -207,6 +204,33 @@ class MailjetTransport implements Swift_Transport {
             $resultStatus = Swift_Events_SendEvent::RESULT_FAILED;
         }
 
+        return $sendCount;
+    }
+
+    /** 
+     *  Finds the number of sent emails in by last send call
+     * @return int Number of messages sent
+     */
+    private function findNumberOfSentMails() {
+        $sendCount = 0;
+        if ($this->messageFormat->getVersion() === 'v3.1') {
+            if (isset($this->resultApi->getBody()['Messages']['To'])) {
+                $sendCount += count($this->resultApi->getBody()['Messages']['To']);
+            }
+            if (isset($this->resultApi->getBody()['Messages']['Bcc'])) {
+                $sendCount += count($this->resultApi->getBody()['Messages']['Bcc']);
+            }
+            if (isset($this->resultApi->getBody()['Messages']['Cc'])) {
+                $sendCount += count($this->resultApi->getBody()['Messages']['Cc']);
+            }
+            return $sendCount;
+        }
+        if ($this->messageFormat->getVersion() === 'v3') {
+            if (isset($this->resultApi->getBody()['Sent'])) {
+                $sendCount += count($this->resultApi->getBody()['Sent']);
+            }
+            return $sendCount;
+        }
         return $sendCount;
     }
 
