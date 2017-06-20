@@ -26,7 +26,7 @@ class messagePayloadV3 implements messageFormatStrategy {
         $ccAddresses = $message->getCc() ? $message->getCc() : [];
         $bccAddresses = $message->getBcc() ? $message->getBcc() : [];
         $attachments = array();
-        // Process Headers
+        // Process HeadAers
         $customHeaders = $this->prepareHeaders($message);
         $userDefinedHeaders = $this->findUserDefinedHeaders($message);
         if ($replyTo = $this->getReplyTo($message)) {
@@ -145,10 +145,6 @@ class messagePayloadV3 implements messageFormatStrategy {
                 $messageHeaders->removeAll($headerName);
             }
         }
-        /* At this moment $messageHeaders is left with only custom user-defined headers,
-         * we add those to $mailjetData
-         */
-        array_push($mailjetData, $messageHeaders);
         return $mailjetData;
     }
 
