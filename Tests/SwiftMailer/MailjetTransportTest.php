@@ -30,7 +30,7 @@ class MailjetTransportTest extends TestCase {
      * @return MailjetTransport
      */
     protected function createTransport() {
-        $clientOptions = ['url' => "www.mailjet.com", 'version' => 'v3.1', 'call' => false];
+        $clientOptions = ['url' => "api.mailjet.com", 'version' => 'v3.1', 'call' => false];
         $transport = new MailjetTransport($this->dispatcher, self::MAILJET_TEST_API_KEY, self::MAILJET_TEST_API_SECRET, false, $clientOptions);
         $transport->setApiKey(self::MAILJET_TEST_API_KEY);
         $transport->setApiSecret(self::MAILJET_TEST_API_SECRET);
@@ -104,7 +104,6 @@ class MailjetTransportTest extends TestCase {
         $message->getHeaders()->addTextHeader('X-MJ-TemplateID', 'azertyuiop');
         $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
         $result = $transport->send($message);
-
         $this->assertEquals('azertyuiop', $mailjetMessage['TemplateID']);
         $this->assertMessageSendable($message);
     }
@@ -129,9 +128,9 @@ class MailjetTransportTest extends TestCase {
         $message->getHeaders()->addTextHeader('X-MJ-CustomID', 'PassengerEticket1234');
         $message->getHeaders()->addTextHeader('X-MJ-EventPayLoad', 'Eticket,1234,row,15,seat,B');
         $message->getHeaders()->addTextHeader('X-MJ-Vars', array('today' => 'monday'));
+        $message->getHeaders()->addTextHeader('X-MyCustomHeader', 'CustomHeader');
 
         $mailjetMessage = $transport->messageFormat->getMailjetMessage($message)['Messages'];
-
         $result = $transport->send($message);
 
         $this->assertEquals('azertyuiop', $mailjetMessage['TemplateID']);
@@ -146,6 +145,7 @@ class MailjetTransportTest extends TestCase {
         $this->assertEquals('PassengerEticket1234', $mailjetMessage['CustomID']);
         $this->assertEquals('Eticket,1234,row,15,seat,B', $mailjetMessage['EventPayload']);
         $this->assertEquals(array('today' => 'monday'), $mailjetMessage['Variables']);
+        $this->assertEquals('CustomHeader', $mailjetMessage['Headers']['X-MyCustomHeader']);
         $this->assertMessageSendable($message);
     }
 

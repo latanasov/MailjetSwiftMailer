@@ -175,7 +175,9 @@ class MailjetTransport implements Swift_Transport {
         foreach ($messages as $message) {
             // extract Mailjet Message from SwiftMailer Message
             $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
-            //No real bulk sending in v3.1 already an array of messages
+            /* No real bulk sending in v3.1. Even single message already 
+             * contains an array Messages, easier for me to code it this way.
+             */
             if ($this->messageFormat->getVersion() == 'v3.1') {
                 $bodyRequest[] = $mailjetMessage['Messages'];
             }
@@ -218,16 +220,16 @@ class MailjetTransport implements Swift_Transport {
             throw new \Swift_TransportException('Cannot create instance of \Mailjet\Client while API key is NULL');
         }
         if (isset($this->clientOptions)) {
-            if ($this->clientOptions['version'] == 'v3.1') {
+            if ($this->clientOptions['version'] === 'v3.1') {
                 $this->messageFormat = new messagePayloadV31();
-            }
-            if ($this->clientOptions['version'] == 'v3') {
+            } elseif ($this->clientOptions['version'] === 'v3') {
                 $this->messageFormat = new messagePayloadV3();
             } else {
-                //todo throw some error or pick one as default
+                $this->messageFormat = new messagePayloadV3();
             }
             return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call, $this->clientOptions);
         }
+        //If no options were provided set the message format to v3 as default
         return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call);
     }
 
@@ -292,6 +294,16 @@ class MailjetTransport implements Swift_Transport {
      */
     public function setClientOptions(array $clientOptions = []) {
         $this->clientOptions = $clientOptions;
+        if (isset($this->clientOptions)) {
+            if ($this->clientOptions['version'] === 'v3.1') {
+                $this->messageFormat = new messagePayloadV31();
+            } elseif ($this->clientOptions['version'] === 'v3') {
+                $this->messageFormat = new messagePayloadV3();
+            } else {
+                $this->messageFormat = new messagePayloadV3();
+            }
+        }
+
         return $this;
     }
 

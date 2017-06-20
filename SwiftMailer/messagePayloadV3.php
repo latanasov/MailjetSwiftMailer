@@ -27,10 +27,10 @@ class messagePayloadV3 implements messageFormatStrategy {
         $bccAddresses = $message->getBcc() ? $message->getBcc() : [];
         $attachments = array();
         // Process Headers
-        $headers = array();
-        $mailjetSpecificHeaders = $this->prepareHeaders($message);
+        $customHeaders = $this->prepareHeaders($message);
+        $userDefinedHeaders = $this->findUserDefinedHeaders($message);
         if ($replyTo = $this->getReplyTo($message)) {
-            $headers = array_merge($headers, array('Reply-To' => $replyTo));
+            $userDefinedHeaders = array_merge($userDefinedHeaders, array('Reply-To' => $replyTo));
         }
         // @TODO only Format To, Cc, Bcc
         $to = "";
@@ -78,11 +78,11 @@ class messagePayloadV3 implements messageFormatStrategy {
             'Subject' => $message->getSubject(),
             'Recipients' => $this->getRecipients($message)
         );
-        if (count($headers) > 0) {
-            $mailjetMessage['Headers'] = $headers;
+        if (count($userDefinedHeaders) > 0) {
+            $mailjetMessage['Headers'] = $userDefinedHeaders;
         }
-        if (count($mailjetSpecificHeaders) > 0) {
-            $mailjetMessage = array_merge($mailjetMessage, $mailjetSpecificHeaders);
+        if (count($customHeaders) > 0) {
+            $mailjetMessage = array_merge($mailjetMessage, $customHeaders);
         }
         if (count($attachments) > 0) {
             $mailjetMessage['Attachments'] = $attachments;
@@ -145,7 +145,39 @@ class messagePayloadV3 implements messageFormatStrategy {
                 $messageHeaders->removeAll($headerName);
             }
         }
+        /* At this moment $messageHeaders is left with only custom user-defined headers,
+         * we add those to $mailjetData
+         */
+        array_push($mailjetData, $messageHeaders);
         return $mailjetData;
+    }
+
+    /**
+     * Extract user defined starting with X-*
+     * @param  Swift_Mime_Message $message
+     * @return array
+     */
+    private function findUserDefinedHeaders(Swift_Mime_Message $message) {
+        $mailjetHeaders = self::getMailjetHeaders();
+        $messageHeaders = $message->getHeaders();
+        $userDefinedHeaders = array();
+
+        foreach (array_keys($mailjetHeaders) as $headerName) {
+            /** @var \Swift_Mime_Headers_MailboxHeader $value */
+            if (null !== $value = $messageHeaders->get($headerName)) {
+                // remove Mailjet specific headers
+                $messageHeaders->removeAll($headerName);
+            }
+        }
+        /* At this moment $messageHeaders is left with non-Mailjet specific headers
+         * 
+         */
+        foreach ($messageHeaders->getAll() as $header) {
+            if (0 === strpos($header->getFieldName(), 'X-')) {
+                $userDefinedHeaders[$header->getFieldName()] = $header->getValue();
+            }
+        }
+        return $userDefinedHeaders;
     }
 
     /**

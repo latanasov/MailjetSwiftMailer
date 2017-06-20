@@ -29,10 +29,12 @@ class messagePayloadV31 implements messageFormatStrategy {
         $attachments = array();
 
         // Process Headers
-        $headers = array();
-        $mailjetSpecificHeaders = $this->prepareHeaders($message);
+        $customHeaders = $this->prepareHeaders($message);
+        $userDefinedHeaders = $this->findUserDefinedHeaders($message);
+
 
         // @TODO only Format To, Cc, Bcc
+        //@TODO array_push is not recommended
         $to = array();
         foreach ($toAddresses as $toEmail => $toName) {
             array_push($to, ['Email' => $toEmail, 'Name' => $toName]);
@@ -91,19 +93,18 @@ class messagePayloadV31 implements messageFormatStrategy {
             $mailjetMessage['ReplyTo'] = $replyTo;
         }
 
-        if (count($headers) > 0) {
-            $mailjetMessage['Headers'] = $headers;
+        if (count($userDefinedHeaders) > 0) {
+            $mailjetMessage['Headers'] = $userDefinedHeaders;
         }
 
-        if (count($mailjetSpecificHeaders) > 0) {
-            $mailjetMessage = array_merge($mailjetMessage, $mailjetSpecificHeaders);
+        if (count($customHeaders) > 0) {
+            $mailjetMessage = array_merge($mailjetMessage, $customHeaders);
         }
 
         if (count($attachments) > 0) {
             $mailjetMessage['Attachments'] = $attachments;
         }
 
-        // @TODO bulk messages
 
         return ['Messages' => $mailjetMessage];
     }
@@ -164,8 +165,35 @@ class messagePayloadV31 implements messageFormatStrategy {
                 $messageHeaders->removeAll($headerName);
             }
         }
-
         return $mailjetData;
+    }
+
+    /**
+     * Extract user defined starting with X-*
+     * @param  Swift_Mime_Message $message
+     * @return array
+     */
+    private function findUserDefinedHeaders(Swift_Mime_Message $message) {
+        $mailjetHeaders = self::getMailjetHeaders();
+        $messageHeaders = $message->getHeaders();
+        $userDefinedHeaders = array();
+
+        foreach (array_keys($mailjetHeaders) as $headerName) {
+            /** @var \Swift_Mime_Headers_MailboxHeader $value */
+            if (null !== $value = $messageHeaders->get($headerName)) {
+                // remove Mailjet specific headers
+                $messageHeaders->removeAll($headerName);
+            }
+        }
+        /* At this moment $messageHeaders is left with non-Mailjet specific headers
+         * 
+         */
+        foreach ($messageHeaders->getAll() as $header) {
+            if (0 === strpos($header->getFieldName(), 'X-')) {
+                $userDefinedHeaders[$header->getFieldName()] = $header->getValue();
+            }
+        }
+        return $userDefinedHeaders;
     }
 
     /**
