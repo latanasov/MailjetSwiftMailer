@@ -29,6 +29,12 @@ class MailjetTransport implements Swift_Transport {
     protected $eventDispatcher;
 
     /**
+     * Mailjet client
+     * @var \Mailjet\Client
+     */
+    protected $mailjetClient = null;
+
+    /**
      * @var messageFormatStrategy
      */
     public $messageFormat;
@@ -66,11 +72,6 @@ class MailjetTransport implements Swift_Transport {
     protected $resultApi;
 
     /**
-     * @var \Mailjet\Client
-     */
-    protected $mailjetClient = null;
-
-    /**
      * @param Swift_Events_EventDispatcher $eventDispatcher
      * @param string $apiKey
      * @param string $apiSecret
@@ -82,7 +83,6 @@ class MailjetTransport implements Swift_Transport {
         $this->apiSecret = $apiSecret;
         $this->call = $call;
         $this->setClientOptions($clientOptions);
-        $this->mailjetClient = $this->createMailjetClient();
     }
 
     /**
@@ -131,6 +131,10 @@ class MailjetTransport implements Swift_Transport {
 
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
+        if (is_null($this->mailjetClient)) {
+            // create Mailjet client
+            $this->mailjetClient = $this->createMailjetClient();
+        }
 
 
         try {
@@ -174,6 +178,10 @@ class MailjetTransport implements Swift_Transport {
         foreach ($messages as $message) {
             // extract Mailjet Message from SwiftMailer Message
             $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
+            if (is_null($this->mailjetClient)) {
+                // create Mailjet client
+                $this->mailjetClient = $this->createMailjetClient();
+            }
             /* No real bulk sending in v3.1. Even single message already 
              * contains an array Messages, easier for me to code it this way.
              */
@@ -310,13 +318,15 @@ class MailjetTransport implements Swift_Transport {
      */
     public function setClientOptions(array $clientOptions = []) {
         $this->clientOptions = $clientOptions;
-        //If no options were provided set the message format to v3 as default
-        if (isset($this->clientOptions)) {
+
+        if (isset($this->clientOptions['version'])) {
             if ($this->clientOptions['version'] === 'v3.1') {
                 $this->messageFormat = new messagePayloadV31();
-            } else {
+            } else {//v3 is default format 
                 $this->messageFormat = new messagePayloadV3();
             }
+        } else {//If no options were provided set the message format to v3 as default
+            $this->messageFormat = new messagePayloadV3();
         }
         return $this;
     }
