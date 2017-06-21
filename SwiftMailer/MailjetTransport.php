@@ -68,7 +68,7 @@ class MailjetTransport implements Swift_Transport {
     /**
      * @var \Mailjet\Client
      */
-    protected $mailjetClient;
+    protected $mailjetClient = null;
 
     /**
      * @param Swift_Events_EventDispatcher $eventDispatcher
@@ -81,7 +81,7 @@ class MailjetTransport implements Swift_Transport {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
         $this->call = $call;
-        $this->clientOptions = $clientOptions;
+        $this->setClientOptions($clientOptions);
         $this->mailjetClient = $this->createMailjetClient();
     }
 
@@ -207,8 +207,8 @@ class MailjetTransport implements Swift_Transport {
         return $sendCount;
     }
 
-    /** 
-     *  Finds the number of sent emails in by last send call
+    /**
+     *  Finds the number of sent emails  by last send call
      * @return int Number of messages sent
      */
     private function findNumberOfSentMails() {
@@ -244,10 +244,8 @@ class MailjetTransport implements Swift_Transport {
             throw new \Swift_TransportException('Cannot create instance of \Mailjet\Client while API key is NULL');
         }
         if (isset($this->clientOptions)) {
-            $this->setClientOptions($this->clientOptions);
             return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call, $this->clientOptions);
         }
-        //If no options were provided set the message format to v3 as default
         return new \Mailjet\Client($this->apiKey, $this->apiSecret, $this->call);
     }
 
@@ -312,6 +310,7 @@ class MailjetTransport implements Swift_Transport {
      */
     public function setClientOptions(array $clientOptions = []) {
         $this->clientOptions = $clientOptions;
+        //If no options were provided set the message format to v3 as default
         if (isset($this->clientOptions)) {
             if ($this->clientOptions['version'] === 'v3.1') {
                 $this->messageFormat = new messagePayloadV31();

@@ -19,7 +19,7 @@ class messagePayloadV31 implements messageFormatStrategy {
      * @throws \Swift_SwiftException
      */
     public function getMailjetMessage(Swift_Mime_Message $message) {
-        $contentType = $this->getMessagePrimaryContentType($message);
+        $contentType = Utils::getMessagePrimaryContentType($message);
         $fromAddresses = $message->getFrom();
         $fromEmails = array_keys($fromAddresses);
         $toAddresses = $message->getTo();
@@ -30,8 +30,8 @@ class messagePayloadV31 implements messageFormatStrategy {
         $inline_attachments = array();
 
         // Process Headers
-        $customHeaders = $this->prepareHeaders($message);
-        $userDefinedHeaders = $this->findUserDefinedHeaders($message);
+        $customHeaders = Utils::prepareHeaders($message, $this->getMailjetHeaders());
+        $userDefinedHeaders = Utils::findUserDefinedHeaders($message);
 
 
         // @TODO only Format To, Cc, Bcc
@@ -74,11 +74,11 @@ class messagePayloadV31 implements messageFormatStrategy {
                     $inline_attachments[] = array(
                         'ContentType' => $child->getContentType(),
                         'Filename' => $child->getFilename(),
-                        'ContentID'=> $child->getId(),
+                        'ContentID' => $child->getId(),
                         'Base64Content' => base64_encode($child->getBody())
                     );
                 }
-            } elseif ($child instanceof Swift_MimePart && $this->supportsContentType($child->getContentType())) {
+            } elseif ($child instanceof Swift_MimePart && Utils::supportsContentType($child->getContentType())) {
                 if ($child->getContentType() == "text/html") {
                     $bodyHtml = $child->getBody();
                 } elseif ($child->getContentType() == "text/plain") {
@@ -161,83 +161,6 @@ class messagePayloadV31 implements messageFormatStrategy {
         } else {
             return null;
         }
-    }
-
-    private function prepareHeaders(Swift_Mime_Message $message) {
-        $mailjetHeaders = self::getMailjetHeaders();
-        $messageHeaders = $message->getHeaders();
-
-        $mailjetData = array();
-
-
-        foreach (array_keys($mailjetHeaders) as $headerName) {
-            /** @var \Swift_Mime_Headers_MailboxHeader $value */
-            if (null !== $value = $messageHeaders->get($headerName)) {
-                // Handle custom headers
-                $mailjetData[$mailjetHeaders[$headerName]] = $value->getValue();
-                // remove Mailjet specific headers
-                $messageHeaders->removeAll($headerName);
-            }
-        }
-        return $mailjetData;
-    }
-
-    /**
-     * Extract user defined starting with X-*
-     * @param  Swift_Mime_Message $message
-     * @return array
-     */
-    private function findUserDefinedHeaders(Swift_Mime_Message $message) {
-        $messageHeaders = $message->getHeaders();
-        $userDefinedHeaders = array();
-        /* At this moment $messageHeaders is left with non-Mailjet specific headers
-         * 
-         */
-        foreach ($messageHeaders->getAll() as $header) {
-            if (0 === strpos($header->getFieldName(), 'X-')) {
-                $userDefinedHeaders[$header->getFieldName()] = $header->getValue();
-            }
-        }
-        return $userDefinedHeaders;
-    }
-
-    /**
-     * @return array
-     */
-    private function getSupportedContentTypes() {
-        return array(
-            'text/plain',
-            'text/html'
-        );
-    }
-
-    /**
-     * @param string $contentType
-     * @return bool
-     */
-    private function supportsContentType($contentType) {
-        return in_array($contentType, $this->getSupportedContentTypes());
-    }
-
-    /**
-     * @param Swift_Mime_Message $message
-     * @return string
-     */
-    private function getMessagePrimaryContentType(Swift_Mime_Message $message) {
-        $contentType = $message->getContentType();
-        if ($this->supportsContentType($contentType)) {
-            return $contentType;
-        }
-        // SwiftMailer hides the content type set in the constructor of Swift_Mime_SimpleMessage as soon
-        // as you add another part to the message. We need to access the protected property
-        // userContentType to get the original type.
-        $messageRef = new \ReflectionClass($message);
-        if ($messageRef->hasProperty('userContentType')) {
-            $propRef = $messageRef->getProperty('userContentType');
-            $propRef->setAccessible(true);
-            $contentType = $propRef->getValue($message);
-        }
-        return $contentType;
     }
 
     public function getVersion() {
