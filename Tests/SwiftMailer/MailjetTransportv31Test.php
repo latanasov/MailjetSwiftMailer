@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Mailjet\MailjetSwiftMailer\SwiftMailer\MailjetTransport;
 use Symfony\Component\Config\Definition\Processor;
 
-class MailjetTransportTest extends TestCase {
+class MailjetTransportv31Test extends TestCase {
 
     const MAILJET_TEST_API_KEY = 'ABCDEFG1234567';
     const MAILJET_TEST_API_SECRET = 'ABCDEFG1234567';
@@ -39,6 +39,7 @@ class MailjetTransportTest extends TestCase {
     }
 
     public function testCanBeInstanciable() {
+        echo "Running test for SendAPI v3.1";
         $this->assertInstanceOf(
                 MailjetTransport::class, $this->createTransport()
         );
@@ -320,7 +321,7 @@ class MailjetTransportTest extends TestCase {
 
 
         try {
-            $configuration = new MessageSendConfiguration();
+            $configuration = new MessageSendConfiguration_v31();
             $processor = new Processor();
             $processor->processConfiguration($configuration, $parameters);
         } catch (\Exception $e) {
