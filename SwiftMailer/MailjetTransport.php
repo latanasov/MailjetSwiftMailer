@@ -131,11 +131,10 @@ class MailjetTransport implements Swift_Transport {
 
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
-        if (is_null($this->mailjetClient)) {
+      
             // create Mailjet client
             $this->mailjetClient = $this->createMailjetClient();
-        }
-
+     
 
         try {
             // send API call
