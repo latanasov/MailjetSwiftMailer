@@ -121,22 +121,26 @@ class MailjetTransport implements Swift_Transport {
     public function send(Swift_Mime_Message $message, &$failedRecipients = null) {
         $this->resultApi = null;
         $failedRecipients = (array) $failedRecipients;
+        $this->resultApi=1;
         if ($event = $this->eventDispatcher->createSendEvent($this, $message)) {
             $this->eventDispatcher->dispatchEvent($event, 'beforeSendPerformed');
             if ($event->bubbleCancelled()) {
                 return 0;
             }
         }
+          $this->resultApi=1;
         $sendCount = 0;
 
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
-      
+        if (is_null($this->mailjetClient)) {
             // create Mailjet client
             $this->mailjetClient = $this->createMailjetClient();
-     
+        }
+  $this->resultApi=2;
 
         try {
+              $this->resultApi=3;
             // send API call
             $this->resultApi = $this->mailjetClient->post(Resources::$Email, [body => $mailjetMessage]);
 
