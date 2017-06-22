@@ -130,7 +130,8 @@ class MailjetTransport implements Swift_Transport {
         }
           $this->resultApi=1;
         $sendCount = 0;
-
+        $version=$this->messageFormat->getVersion();
+echo "<script>console.log({$version})</script>";
         // extract Mailjet Message from SwiftMailer Message
         $mailjetMessage = $this->messageFormat->getMailjetMessage($message);
         if (is_null($this->mailjetClient)) {
@@ -154,14 +155,15 @@ class MailjetTransport implements Swift_Transport {
                 $resultStatus = Swift_Events_SendEvent::RESULT_FAILED;
             }
         } catch (\Exception $e) {
+            echo "<script>console.log({$this->mailjetClient})</script>";
             $failedRecipients = $message->getTo();
             $sendCount = 0;
             $resultStatus = Swift_Events_SendEvent::RESULT_FAILED;
         }
         // Send SwiftMailer Event
         if ($event) {
-             echo "<script>console.log({$mailjetMessage})</script>"; 
-               echo "<script>console.log({$this->mailjetClient})</script>";
+           
+             
             $event->setResult($resultStatus);
             $event->setFailedRecipients($failedRecipients);
             $this->eventDispatcher->dispatchEvent($event, 'sendPerformed');
